@@ -1,3 +1,33 @@
+<?php
+session_start();
+error_reporting(E_ALL & ~E_NOTICE);
+
+require('../dbconnect.php');
+
+//chack.phpに直リンした時の処理
+//index.phpで設定した$_SESSION['join']=$_POSTに値が入ってなかったらindex.phpに飛ばす
+if(!isset($_SESSION['join'])){
+	header('Location:index.php');
+}
+
+//POSTされていたら、sqlをINSERTして、thanks.phpに飛ばす
+//<input type="hidden"～で、<input type="submit"してるやつ。POST内容はないけども！！
+if(!empty($_POST)){
+	$statement = $db->prepare('INSERT INTO members SET name=?, email=?, password=?, picture=?, created=NOW()');
+	echo $statement->execute(array(
+		$_SESSION['join']['name']
+		,$_SESSION['join']['email']
+		,sha1($_SESSION['join']['password'])
+		,$_SESSION['join']['image']
+	));
+	unset($_SESSION['join']);
+
+	header('Location: thanks.php');
+	exit();
+}
+
+?>
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -21,9 +51,11 @@
 	<dl>
 		<dt>ニックネーム</dt>
 		<dd>
+		<?php print(htmlspecialchars($_SESSION['join']['name'],ENT_QUOTES)); ?> 
         </dd>
 		<dt>メールアドレス</dt>
 		<dd>
+		<?php print(htmlspecialchars($_SESSION['join']['email'],ENT_QUOTES)); ?> 
         </dd>
 		<dt>パスワード</dt>
 		<dd>
@@ -31,6 +63,9 @@
 		</dd>
 		<dt>写真など</dt>
 		<dd>
+		<?php if($_SESSION['join']['image'] !== ''): ?>
+			<img src="../member_picture/<?php print(htmlspecialchars($_SESSION['join']['image'], ENT_QUOTES)); ?>">
+		<?php endif; ?>
 		</dd>
 	</dl>
 	<div><a href="index.php?action=rewrite">&laquo;&nbsp;書き直す</a> | <input type="submit" value="登録する" /></div>

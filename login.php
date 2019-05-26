@@ -1,3 +1,47 @@
+<?php
+session_start();
+error_reporting(E_ALL & ~E_NOTICE); 
+require('dbconnect.php');
+
+if($_COOKIE['email'] !== ''){
+  $email = $_COOKIE['email'];
+}
+
+//$_POSTが空じゃない時の処理・・POSTが送信された後
+if(!empty($_POST)){
+  $email = $_POST['email'];
+
+  if($_POST['email'] !== '' && $_POST['password'] !== ''){
+    $login = $db->prepare('SELECT * FROM members WHERE email=? AND password=?');
+    $login->execute(array(
+      $_POST['email'],
+      sha1($_POST['password'])
+    ));
+    $member = $login->fetch();
+
+    if($member){
+      $_SESSION['id'] = $member['id'];
+      $_SESSION['time'] = time();
+      //自動的にログインするにチェックが入っていたらemail情報をcookieに保存する
+      if($_POST['save'] === 'on'){
+        setcookie('email',$_POST['email'], time()+60*60*24*14);
+      }
+
+      header('Location: index.php');
+      exit();
+    }else{
+      $error['login'] = 'failed';
+    }
+
+  } else{
+    $error['login'] = 'blank';
+  }
+}
+//$error['login'] = 'failed'; $error['login'] = 'blank';
+//['login']に２つ入るの？
+
+?>
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -21,11 +65,17 @@
       <dl>
         <dt>メールアドレス</dt>
         <dd>
-          <input type="text" name="email" size="35" maxlength="255" value="<?php echo htmlspecialchars($_POST['email']); ?>" />
+          <input type="text" name="email" size="35" maxlength="255" value="<?php print(htmlspecialchars($email,ENT_QUOTES)); ?>" />
+          <?php if($error['login'] === 'blank'): ?>
+          <p class="error">※メールアドレスとパスワードを記入してください</p>
+          <?php endif; ?>
         </dd>
         <dt>パスワード</dt>
         <dd>
-          <input type="password" name="password" size="35" maxlength="255" value="<?php echo htmlspecialchars($_POST['password']); ?>" />
+          <input type="password" name="password" size="35" maxlength="255" value="<?php print(htmlspecialchars($_POST['password'],ENT_QUOTES)); ?>" />
+          <?php if($error['login'] === 'failed'): ?>
+          <p class="error">※ログインに失敗しました</p>
+          <?php endif; ?>
         </dd>
         <dt>ログイン情報の記録</dt>
         <dd>

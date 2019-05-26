@@ -1,3 +1,22 @@
+<!-- メッセージの詳細画面 -->
+
+<?php
+
+session_start();
+require('dbconnect.php');
+error_reporting(E_ALL & ~E_NOTICE);
+
+
+//$_REQUEST['id']が空だったらindex.phpへ！
+if(empty($_REQUEST['id'])){
+  header('Location: index.php');
+  exit();
+}
+
+$posts = $db->prepare('SELECT m.name, m.picture, P.* FROM members m, posts p WHERE m.id=p.member_id AND p.id=?');
+$posts->execute(array($_REQUEST['id']));
+?>
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -17,13 +36,19 @@
   <div id="content">
   <p>&laquo;<a href="index.php">一覧にもどる</a></p>
 
+  <!-- DBから引いた情報を$postに格納 -->
+  <?php if($post = $posts->fetch()): ?>
+    <!-- $postに格納された情報(上でselectしとるやつな）があれば投稿内容を表示 -->
     <div class="msg">
-    <img src="member_picture/" />
-    <p><span class="name">（）</span></p>
-    <p class="day"></p>
+    <img src="member_picture/<?php print(htmlspecialchars($post['picture'])); ?>" />
+    <p><?php print(htmlspecialchars($post['message'])); ?>
+    <span class="name">（<?php print(htmlspecialchars($post['name'])); ?>）</span></p>
+    <p class="day"><?php print(htmlspecialchars($post['created'])); ?></p>
     </div>
-
-	<p>その投稿は削除されたか、URLが間違えています</p>
+  <?php else: ?>
+    <!-- なければこっち -->
+    <p>その投稿は削除されたか、URLが間違えています</p>
+  <?php endif; ?>
   </div>
 </div>
 </body>
